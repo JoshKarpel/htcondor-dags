@@ -1,8 +1,6 @@
 -r requirements.txt
 
-pytest >= 4.1.1
-pytest-mock
-pytest-xdist
+pytest
 pytest-watch
 coverage
 pytest-cov
