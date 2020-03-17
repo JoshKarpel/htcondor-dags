@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-CONTAINER_TAG=dags-tests
-
-set -e
-echo "Building htcondor-dags testing container..."
-docker build --quiet -t ${CONTAINER_TAG} --file tests/_inf/Dockerfile .
-docker run -it --rm ${CONTAINER_TAG} $@

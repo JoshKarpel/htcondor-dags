@@ -1,7 +1,4 @@
-dist: xenial
-sudo: required
-services:
-  - docker
+os: linux
 
 language: python
 python:
@@ -11,11 +8,16 @@ env:
   - HTCONDOR_VERSION=8.8
   - HTCONDOR_VERSION=8.9
 
-matrix:
+jobs:
   fast_finish: true
 
 install:
-  - travis_retry docker build -t dags-test --file tests/_inf/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
+  - pip install .
+  - pip install -r requirements-dev.txt
+  - pip install --upgrade htcondor==${HTCONDOR_VERSION}.*
 
 script:
-  - docker run dags-test tests/_inf/travis.sh
+  - pytest
+
+after_success:
+  - codecov
