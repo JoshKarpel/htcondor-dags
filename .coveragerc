@@ -2,9 +2,7 @@
 branch = True
 
 include =
-    htcondor_dags/*
-
-omit =
+    htcondor/dags/*
     tests/*
 
 [report]
