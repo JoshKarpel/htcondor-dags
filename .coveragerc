@@ -1,9 +1,9 @@
 [run]
 branch = True
 
-include =
-    htcondor/dags/*
-    tests/*
+source =
+    htcondor.dags
+    tests
 
 [report]
 exclude_lines =
