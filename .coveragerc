@@ -1,6 +1,8 @@
 [run]
 branch = True
 
+data_file = /tmp/htcondor-dags-test-coverage
+
 source =
     htcondor.dags
     tests

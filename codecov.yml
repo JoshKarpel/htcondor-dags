@@ -1,5 +1,6 @@
 codecov:
   strict_yaml_branch: master
+  token: 89120b28-41f0-4f87-bef9-400d269784b1
 coverage:
   range: 50..100
   round: down
