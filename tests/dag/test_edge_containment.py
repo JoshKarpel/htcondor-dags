@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import htcondor_dags as dags
+from htcondor import dags
 
 
 def test_dag_contains_edge(dag):
