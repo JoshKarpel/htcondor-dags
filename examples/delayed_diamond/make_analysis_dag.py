@@ -36,9 +36,7 @@ combine_counts = count_words.child_layer(
     submit_description=htcondor.Submit(
         {
             "executable": "combine_counts.py",
-            "transfer_input_files": ", ".join(
-                f"counts_{n}.txt" for n in range(num_chunks)
-            ),
+            "transfer_input_files": ", ".join(f"counts_{n}.txt" for n in range(num_chunks)),
             "output": "combine_counts.out",
             "error": "combine_counts.err",
         }

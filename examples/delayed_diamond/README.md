@@ -9,7 +9,7 @@ example:
 
 However, we now have an additional restriction:
 
-> The number of chunks is not known ahead of time; it is determined during the 
+> The number of chunks is not known ahead of time; it is determined during the
 > execution of `split_words.py`.
 
 This will necessarily change the structure of our workflow. In the Basic Diamond
@@ -60,12 +60,13 @@ We won't run `make_analysis_dag.py` ourselves.
 Instead, we set up the `split_words` layer to run it as a post-script.
 Look at `make_top_dag.py` and `make_analysis_dag.py` to see the changes in detail.
 
-Conveniently, we don't need to change `count_words.py` or `combine_counts.py` 
+Conveniently, we don't need to change `count_words.py` or `combine_counts.py`
 at all; we just need to change how we determine their input files.
 The only change to `split_words.py` is to make it choose the number of chunks
 randomly (either 5, 10, or 20):
 ```python
 import random
+
 num_chunks = random.choice((5, 10, 20))
 ```
 

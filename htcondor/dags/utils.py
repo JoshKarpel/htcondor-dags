@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Any, Callable, Dict, Mapping, Iterator, TypeVar, Tuple
+from typing import Iterable, Any, Callable, Dict, Mapping, Iterator, TypeVar, Tuple, Optional
 import logging
 
 import itertools
 import re
+
+import htcondor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -95,23 +97,17 @@ def table(
         if isinstance(row, Mapping):
             processed_rows.append([str(row.get(key, fill)) for key in headers])
         else:
-            processed_rows.append(
-                [str(entry) if entry is not None else fill for entry in row]
-            )
+            processed_rows.append([str(entry) if entry is not None else fill for entry in row])
 
     for row in processed_rows:
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
     header = header_fmt(
-        "  ".join(
-            getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)
-        ).rstrip()
+        "  ".join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)).rstrip()
     )
 
     lines = (
-        row_fmt(
-            "  ".join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods))
-        )
+        row_fmt("  ".join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods)))
         for row in processed_rows
     )
 
@@ -120,9 +116,7 @@ def table(
     return output
 
 
-VERSION_RE = re.compile(
-    r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII
-)
+VERSION_RE = re.compile(r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII)
 
 
 def parse_version(v: str) -> Tuple[int, int, int, str, int]:
@@ -141,3 +135,31 @@ def parse_version(v: str) -> Tuple[int, int, int, str, int]:
     )
 
     return out
+
+
+VERSION_RE = re.compile(r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII,)
+
+
+def parse_version(v: str) -> Tuple[int, int, int, Optional[str], Optional[int]]:
+    match = VERSION_RE.match(v)
+    if match is None:
+        raise Exception(f"Could not determine version info from {v}")
+
+    (major, minor, micro, prerelease, prerelease_num) = match.group(1, 2, 4, 5, 6)
+
+    out = (
+        int(major),
+        int(minor),
+        int(micro or 0),
+        prerelease[0] if prerelease is not None else None,
+        int(prerelease_num) if prerelease_num is not None else None,
+    )
+
+    return out
+
+
+EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags=re.ASCII)
+
+BINDINGS_VERSION_INFO = parse_version(
+    EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0)
+)

@@ -1,20 +1,31 @@
 dist: xenial
 
+cache:
+  directories:
+    - $HOME/.cache/pre-commit
+
 language: python
 python:
   - "3.6"
   - "3.7"
   - "3.8"
 
-matrix:
+jobs:
   fast_finish: false
+  exclude:
+    - python: "3.8"
+      env: HTCONDOR_VERSION=8.8
+
+before_install:
+  - python -m pip install pre-commit
+  - pre-commit run --all-files
 
 install:
   - pip install --upgrade -r requirements-dev.txt
   - pip install .
 
 script:
-  - pytest --cov
+  - pytest --cov --durations=20
 
 after_success:
   - codecov -X gcov

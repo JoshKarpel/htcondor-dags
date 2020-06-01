@@ -67,10 +67,7 @@ def test_ancestors_has_all_ancestors_branching_depth_first(dag):
     b2 = dag.layer(name="b2")
     c = dags.Nodes(b1, b2).child_layer(name="c")
 
-    assert list(c.walk_ancestors(dags.WalkOrder.DEPTH_FIRST)) in (
-        [b1, a, b2],
-        [b2, b1, a],
-    )
+    assert list(c.walk_ancestors(dags.WalkOrder.DEPTH_FIRST)) in ([b1, a, b2], [b2, b1, a],)
 
 
 def test_ancestors_has_all_ancestors_branching_breadth_first(dag):
@@ -79,10 +76,7 @@ def test_ancestors_has_all_ancestors_branching_breadth_first(dag):
     b2 = dag.layer(name="b2")
     c = dags.Nodes(b1, b2).child_layer(name="c")
 
-    assert list(c.walk_ancestors(dags.WalkOrder.BREADTH_FIRST)) in (
-        [b1, b2, a],
-        [b2, b1, a],
-    )
+    assert list(c.walk_ancestors(dags.WalkOrder.BREADTH_FIRST)) in ([b1, b2, a], [b2, b1, a],)
 
 
 def test_ancestors_doesnt_include_disconnected_piece(dag):
@@ -119,10 +113,7 @@ def test_descendants_has_all_descendants_branching_depth_first(dag):
     c = b1.child_layer(name="c")
     b2 = a.child_layer(name="b2")
 
-    assert list(a.walk_descendants(dags.WalkOrder.DEPTH_FIRST)) in (
-        [b1, c, b2],
-        [b2, b1, c],
-    )
+    assert list(a.walk_descendants(dags.WalkOrder.DEPTH_FIRST)) in ([b1, c, b2], [b2, b1, c],)
 
 
 def test_descendants_has_all_descendants_branching_breadth_first(dag):
@@ -131,10 +122,7 @@ def test_descendants_has_all_descendants_branching_breadth_first(dag):
     c = b1.child_layer(name="c")
     b2 = a.child_layer(name="b2")
 
-    assert list(a.walk_descendants(dags.WalkOrder.BREADTH_FIRST)) in (
-        [b1, b2, c],
-        [b2, b1, c],
-    )
+    assert list(a.walk_descendants(dags.WalkOrder.BREADTH_FIRST)) in ([b1, b2, c], [b2, b1, c],)
 
 
 def test_descendants_of_nodes_joins_descendants(dag):

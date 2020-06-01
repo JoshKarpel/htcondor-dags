@@ -43,9 +43,7 @@ class BaseEdge(abc.ABC):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]],
-            Tuple[Tuple[int], JoinNode],
-            Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         """
@@ -101,9 +99,7 @@ class ManyToMany(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]],
-            Tuple[Tuple[int], JoinNode],
-            Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -130,9 +126,7 @@ class OneToOne(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]],
-            Tuple[Tuple[int], JoinNode],
-            Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -176,9 +170,7 @@ class Grouper(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]],
-            Tuple[Tuple[int], JoinNode],
-            Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -192,9 +184,7 @@ class Grouper(BaseEdge):
             raise exceptions.IncompatibleGrouper(
                 f"Cannot apply edge {self} to child layer {child} because number of real child nodes ({len(child)}) is not evenly divisible by the child chunk size ({self.child_chunk_size})"
             )
-        if (num_parent_vars // self.parent_chunk_size) != (
-            num_child_vars // self.child_chunk_size
-        ):
+        if (num_parent_vars // self.parent_chunk_size) != (num_child_vars // self.child_chunk_size):
             raise exceptions.IncompatibleGrouper(
                 f"Cannot apply edge {self} to layers {parent} and {child} because they do not produce the same number of chunks (parent chunk: {len(parent)} / {self.parent_chunk_size} = {len(parent) // self.parent_chunk_size}, child chunk: {len(child)} / {self.child_chunk_size} = {len(child) // self.child_chunk_size})"
             )
@@ -219,9 +209,7 @@ class Slicer(BaseEdge):
     slice.
     """
 
-    def __init__(
-        self, parent_slice: slice = slice(None), child_slice: slice = slice(None)
-    ):
+    def __init__(self, parent_slice: slice = slice(None), child_slice: slice = slice(None)):
         self.parent_slice = parent_slice
         self.child_slice = child_slice
 
@@ -229,9 +217,7 @@ class Slicer(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]],
-            Tuple[Tuple[int], JoinNode],
-            Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)

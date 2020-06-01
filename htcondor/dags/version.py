@@ -17,7 +17,13 @@ from typing import Tuple, Optional
 
 from . import utils
 
-__version__ = "0.2.0"
+try:
+    from importlib import metadata
+except ImportError:
+    # Running on pre-3.8 Python; use importlib-metadata package
+    import importlib_metadata as metadata
+
+__version__ = metadata.version("htcondor-dags")
 
 
 def version() -> str:

@@ -57,10 +57,7 @@ def test_config_file_has_right_contents(dag_dir):
     dag = dags.DAG(dagman_config={"DAGMAN_MAX_JOBS_IDLE": 10})
     dags.write_dag(dag, dag_dir)
 
-    assert (
-        "DAGMAN_MAX_JOBS_IDLE = 10"
-        in (dag_dir / dags.CONFIG_FILE_NAME).read_text().splitlines()
-    )
+    assert "DAGMAN_MAX_JOBS_IDLE = 10" in (dag_dir / dags.CONFIG_FILE_NAME).read_text().splitlines()
 
 
 def test_dagman_job_attributes_with_one_attr():
@@ -106,10 +103,7 @@ def test_dot_config_default():
 def test_dot_config_not_default():
     dag = dags.DAG(
         dot_config=dags.DotConfig(
-            Path("dag.dot"),
-            update=True,
-            overwrite=False,
-            include_file=Path("include-me.dot"),
+            Path("dag.dot"), update=True, overwrite=False, include_file=Path("include-me.dot"),
         )
     )
 

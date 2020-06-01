@@ -90,11 +90,7 @@ def test_layer_script_meta(dag, writer):
     dag.layer(
         name="foobar",
         pre=dags.Script(
-            executable="/bin/sleep",
-            arguments=["5m"],
-            retry=True,
-            retry_status=2,
-            retry_delay=3,
+            executable="/bin/sleep", arguments=["5m"], retry=True, retry_status=2, retry_delay=3,
         ),
     )
 
@@ -109,8 +105,7 @@ def test_layer_abort(dag, writer):
 
 def test_layer_abort_with_meta(dag, writer):
     dag.layer(
-        name="foobar",
-        abort=dags.DAGAbortCondition(node_exit_value=3, dag_return_value=10),
+        name="foobar", abort=dags.DAGAbortCondition(node_exit_value=3, dag_return_value=10),
     )
 
     assert f"ABORT-DAG-ON foobar{s}0 3 RETURN 10" in dagfile_lines(writer)

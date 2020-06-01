@@ -26,7 +26,7 @@ The overall workflow looks like this:
 
 The arrows describe parent -> child relationships.
 The job (or "node", in DAG parlance) at the start of the arrow must complete
-before the job at the end of the arrow can start. 
+before the job at the end of the arrow can start.
 
 We often refer to this basic structure as a "diamond" or as a "scatter-gather".
 It is also an example of a "map-reduce" workflow, where you have one function to

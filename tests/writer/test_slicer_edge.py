@@ -26,9 +26,7 @@ def test_slicer_edge_produces_correct_dagfile_lines(dag, writer):
     child = parent.child_layer(
         name="child",
         vars=[{}] * 4,
-        edge=dags.Slicer(
-            parent_slice=slice(None, None, 2), child_slice=slice(1, None, 2)
-        ),
+        edge=dags.Slicer(parent_slice=slice(None, None, 2), child_slice=slice(1, None, 2)),
     )
 
     lines = dagfile_lines(writer)

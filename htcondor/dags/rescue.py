@@ -25,9 +25,7 @@ from .writer import DEFAULT_DAG_FILE_NAME
 from . import exceptions
 
 
-def rescue(
-    dag: dag.DAG, rescue_file: Path, formatter: Optional[NodeNameFormatter] = None
-) -> None:
+def rescue(dag: dag.DAG, rescue_file: Path, formatter: Optional[NodeNameFormatter] = None) -> None:
     """
     Applies state recorded in a DAGMan rescue file to the ``dag``.
     The ``dag`` will be modified in-place.
@@ -90,9 +88,7 @@ def apply_rescue(dag: dag.DAG, finished_nodes: Mapping[str, Set[int]]) -> None:
             node.done[index] = True
 
 
-def find_rescue_file(
-    dag_dir: Path, dag_file_name: str = DEFAULT_DAG_FILE_NAME
-) -> Optional[Path]:
+def find_rescue_file(dag_dir: Path, dag_file_name: str = DEFAULT_DAG_FILE_NAME) -> Optional[Path]:
     """
     Finds the latest rescue file in a DAG directory (just like DAGMan itself would).
 

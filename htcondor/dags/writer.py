@@ -60,9 +60,7 @@ class DAGWriter:
     """Not re-entrant!"""
 
     def __init__(
-        self,
-        dag: "dag.DAG",
-        node_name_formatter: Optional[formatter.NodeNameFormatter] = None,
+        self, dag: "dag.DAG", node_name_formatter: Optional[formatter.NodeNameFormatter] = None,
     ):
         self.dag = dag
 
@@ -72,9 +70,7 @@ class DAGWriter:
 
         self.join_factory = edges.JoinFactory()
 
-    def write(
-        self, dag_dir: Path, dag_file_name: Optional[str] = DEFAULT_DAG_FILE_NAME
-    ) -> Path:
+    def write(self, dag_dir: Path, dag_file_name: Optional[str] = DEFAULT_DAG_FILE_NAME) -> Path:
         dag_dir = Path(dag_dir).absolute()
         dag_file_name = dag_file_name or DEFAULT_DAG_FILE_NAME
 
@@ -100,8 +96,7 @@ class DAGWriter:
         for layer in (
             n
             for n in self.dag.nodes
-            if isinstance(n, node.NodeLayer)
-            and isinstance(n.submit_description, htcondor.Submit)
+            if isinstance(n, node.NodeLayer) and isinstance(n.submit_description, htcondor.Submit)
         ):
             text = str(layer.submit_description) + "\nqueue"
             (path / f"{layer.name}.sub").write_text(text)
@@ -182,9 +177,7 @@ class DAGWriter:
         elif isinstance(node_, node.FinalNode):
             yield from self.yield_final_node_lines(node_)
         else:
-            raise TypeError(
-                f"unrecognized node type ({node_.__class__}) for node {node_}"
-            )
+            raise TypeError(f"unrecognized node type ({node_.__class__}) for node {node_}")
 
     def yield_layer_lines(self, layer: node.NodeLayer) -> Iterator[str]:
         # write out each low-level dagman node in the layer
@@ -260,9 +253,7 @@ class DAGWriter:
                 parts.append(f"RETURN {node.abort.dag_return_value}")
             yield " ".join(parts)
 
-    def yield_script_line(
-        self, name: str, script: node.Script, which: str
-    ) -> Iterator[str]:
+    def yield_script_line(self, name: str, script: node.Script, which: str) -> Iterator[str]:
         parts = ["SCRIPT"]
 
         if script.retry:

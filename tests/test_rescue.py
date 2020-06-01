@@ -26,12 +26,7 @@ from htcondor.dags.rescue import _rescue
 @pytest.fixture(scope="session")
 def rescue_dag():
     sub = htcondor.Submit(
-        dict(
-            executable="/bin/echo",
-            arguments="hi",
-            request_memory="16MB",
-            request_disk="1MB",
-        )
+        dict(executable="/bin/echo", arguments="hi", request_memory="16MB", request_disk="1MB",)
     )
 
     dag = dags.DAG()

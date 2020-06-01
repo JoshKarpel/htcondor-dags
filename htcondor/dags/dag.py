@@ -48,10 +48,7 @@ class DotConfig:
 
 class NodeStatusFile:
     def __init__(
-        self,
-        path: Path,
-        update_time: Optional[int] = None,
-        always_update: Optional[bool] = False,
+        self, path: Path, update_time: Optional[int] = None, always_update: Optional[bool] = False,
     ):
         self.path = Path(path)
         self.update_time = update_time
@@ -165,9 +162,7 @@ class DAG:
             or breadth-first (siblings before parents).
         """
         yield from self._walk(
-            initial_stack=self.node_to_parents[node],
-            add_to_stack=lambda n: n.parents,
-            order=order,
+            initial_stack=self.node_to_parents[node], add_to_stack=lambda n: n.parents, order=order,
         )
 
     def walk_descendants(
@@ -217,9 +212,7 @@ class DAG:
             yield node
 
     @property
-    def edges(
-        self
-    ) -> Iterator[Tuple[Tuple[node.BaseNode, node.BaseNode], edges.BaseEdge]]:
+    def edges(self) -> Iterator[Tuple[Tuple[node.BaseNode, node.BaseNode], edges.BaseEdge]]:
         """Iterate over ``((parent, child), edge)`` tuples."""
         yield from self._edges
 
@@ -254,9 +247,7 @@ class DAG:
 
     def select(self, selector: Callable[[node.BaseNode], bool]) -> node.Nodes:
         """Return a :class:`Nodes` of the nodes in the DAG that satisfy ``selector``."""
-        return node.Nodes(
-            *(node for name, node in self._nodes.items() if selector(node))
-        )
+        return node.Nodes(*(node for name, node in self._nodes.items() if selector(node)))
 
     def glob(self, pattern: str) -> node.Nodes:
         """Return a :class:`Nodes` of the nodes in the DAG whose names match the glob ``pattern``."""
@@ -297,18 +288,14 @@ class DAG:
     def roots(self) -> node.Nodes:
         """Return a :class:`Nodes` of the nodes in the DAG that have no parents."""
         return node.Nodes(
-            child
-            for child, parents in self.node_to_parents.items()
-            if len(parents) == 0
+            child for child, parents in self.node_to_parents.items() if len(parents) == 0
         )
 
     @property
     def leaves(self) -> node.Nodes:
         """Return a :class:`Nodes` of the nodes in the DAG that have no children."""
         return node.Nodes(
-            parent
-            for parent, children in self.node_to_children.items()
-            if len(children) == 0
+            parent for parent, children in self.node_to_children.items() if len(children) == 0
         )
 
     def describe(self) -> str:  # pragma: no cover
@@ -328,9 +315,7 @@ class DAG:
             children = len(n.children)
 
             if len(n.parents) > 0:
-                parents = ", ".join(
-                    f"{p.name}[{self._edges.get(p, n)}]" for p in n.parents
-                )
+                parents = ", ".join(f"{p.name}[{self._edges.get(p, n)}]" for p in n.parents)
             else:
                 parents = None
 
@@ -359,32 +344,23 @@ class EdgeStore:
     def __contains__(self, item) -> bool:
         return item in self.edges
 
-    def items(
-        self
-    ) -> Iterator[Tuple[Tuple[node.BaseNode, node.BaseNode], edges.BaseEdge]]:
+    def items(self) -> Iterator[Tuple[Tuple[node.BaseNode, node.BaseNode], edges.BaseEdge]]:
         yield from self.edges.items()
 
-    def get(
-        self, parent: node.BaseNode, child: node.BaseNode
-    ) -> Optional[edges.BaseEdge]:
+    def get(self, parent: node.BaseNode, child: node.BaseNode) -> Optional[edges.BaseEdge]:
         try:
             return self.edges[(parent, child)]
         except KeyError:
             return None
 
     def add(
-        self,
-        parent: node.BaseNode,
-        child: node.BaseNode,
-        edge: Optional[edges.BaseEdge] = None,
+        self, parent: node.BaseNode, child: node.BaseNode, edge: Optional[edges.BaseEdge] = None,
     ) -> None:
         if edge is None:
             edge = edges.ManyToMany()
         self.edges[(parent, child)] = edge
 
-    def pop(
-        self, parent: node.BaseNode, child: node.BaseNode
-    ) -> Optional[edges.BaseEdge]:
+    def pop(self, parent: node.BaseNode, child: node.BaseNode) -> Optional[edges.BaseEdge]:
         return self.edges.pop((parent, child), None)
 
 

@@ -31,9 +31,7 @@ class NodeNameFormatter(abc.ABC):
 
 
 class SimpleFormatter(NodeNameFormatter):
-    def __init__(
-        self, separator=DEFAULT_SEPARATOR, index_format="{:d}", offset: int = 0
-    ):
+    def __init__(self, separator=DEFAULT_SEPARATOR, index_format="{:d}", offset: int = 0):
         self.separator = separator
         self.index_format = index_format
         self.offset = offset

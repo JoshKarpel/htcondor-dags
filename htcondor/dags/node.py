@@ -184,9 +184,7 @@ class BaseNode(abc.ABC):
             return NotImplemented
         return self.name < other.name
 
-    def child_layer(
-        self, edge: Optional[edges.BaseEdge] = None, **kwargs
-    ) -> "NodeLayer":
+    def child_layer(self, edge: Optional[edges.BaseEdge] = None, **kwargs) -> "NodeLayer":
         """
         Create a new :class:`NodeLayer` which is a child of this node.
 
@@ -211,9 +209,7 @@ class BaseNode(abc.ABC):
 
         return node
 
-    def parent_layer(
-        self, edge: Optional[edges.BaseEdge] = None, **kwargs
-    ) -> "NodeLayer":
+    def parent_layer(self, edge: Optional[edges.BaseEdge] = None, **kwargs) -> "NodeLayer":
         """
         Create a new :class:`NodeLayer` which is a parent of this node.
 
@@ -263,9 +259,7 @@ class BaseNode(abc.ABC):
 
         return node
 
-    def parent_subdag(
-        self, edge: Optional[edges.BaseEdge] = None, **kwargs
-    ) -> "SubDAG":
+    def parent_subdag(self, edge: Optional[edges.BaseEdge] = None, **kwargs) -> "SubDAG":
         """
         Create a new :class:`SubDAG` which is a parent of this node.
 
@@ -384,15 +378,11 @@ class BaseNode(abc.ABC):
         """Return a :class:`Nodes` containing all of the parents of this node."""
         return self._dag.node_to_parents[self]
 
-    def walk_ancestors(
-        self, order: WalkOrder = WalkOrder.DEPTH_FIRST
-    ) -> Iterator["BaseNode"]:
+    def walk_ancestors(self, order: WalkOrder = WalkOrder.DEPTH_FIRST) -> Iterator["BaseNode"]:
         """Walk over all of the ancestors of this node, in the given order."""
         return self._dag.walk_ancestors(node=self, order=order)
 
-    def walk_descendants(
-        self, order: WalkOrder = WalkOrder.DEPTH_FIRST
-    ) -> Iterator["BaseNode"]:
+    def walk_descendants(self, order: WalkOrder = WalkOrder.DEPTH_FIRST) -> Iterator["BaseNode"]:
         """Walk over all of the descendants of this node, in the given order."""
         return self._dag.walk_descendants(node=self, order=order)
 
@@ -546,9 +536,7 @@ class Nodes:
 
         return node
 
-    def parent_layer(
-        self, type: Optional[edges.BaseEdge] = None, **kwargs
-    ) -> NodeLayer:
+    def parent_layer(self, type: Optional[edges.BaseEdge] = None, **kwargs) -> NodeLayer:
         """
         Create a new :class:`NodeLayer` which is a parent of all of the nodes in
         this :class:`Nodes`.
@@ -712,12 +700,8 @@ class Nodes:
 
     def walk_ancestors(self, order: WalkOrder = WalkOrder.DEPTH_FIRST):
         """Walk over all of the ancestors of all of the nodes in this :class:`Nodes`, in the given order."""
-        return itertools.chain.from_iterable(
-            n.walk_ancestors(order=order) for n in self
-        )
+        return itertools.chain.from_iterable(n.walk_ancestors(order=order) for n in self)
 
     def walk_descendants(self, order: WalkOrder = WalkOrder.DEPTH_FIRST):
         """Walk over all of the descendants of all of the nodes in this :class:`Nodes`, in the given order."""
-        return itertools.chain.from_iterable(
-            n.walk_descendants(order=order) for n in self
-        )
+        return itertools.chain.from_iterable(n.walk_descendants(order=order) for n in self)
