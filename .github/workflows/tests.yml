@@ -19,9 +19,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Display HTCondor Python bindings version
-        run: python -c "import htcondor; print(htcondor.version())"
+      - name: Install package
+        run: pip install .[tests] htcondor==${{ matrix.htcondor-version }}
       - name: Run tests
         run: pytest --cov --durations=20
