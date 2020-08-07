@@ -1,4 +1,4 @@
-# Copyright 2019 HTCondor Team, Computer Sciences Department,
+# Copyright 2020 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import logging
-from typing import Optional, List, Dict, Iterator, Mapping
+from typing import Optional, List, Dict, Iterator
 
 from pathlib import Path
 
@@ -32,7 +32,10 @@ NOOP_SUBMIT_FILE_NAME = "__JOIN__.sub"
 
 
 def write_dag(
-    dag: dag.DAG, dag_dir: Path, dag_file_name: Optional[str] = DEFAULT_DAG_FILE_NAME
+    dag: dag.DAG,
+    dag_dir: Path,
+    dag_file_name: Optional[str] = DEFAULT_DAG_FILE_NAME,
+    node_name_formatter: Optional[formatter.NodeNameFormatter] = None,
 ) -> Path:
     """
     Write out the given DAG to the given directory.
@@ -47,20 +50,29 @@ def write_dag(
         The directory to write the DAG files to.
     dag_file_name
         The name of the DAG description file itself.
+    node_name_formatter
+        The :class:`NodeNameFormatter` to use for generating underlying node names.
+        If not provided, the default is :class:`SimpleFormatter`.
 
     Returns
     -------
-    dag_file_path :
-        Returns the path to the DAG description file.
+    dag_file_path : :class:`pathlib.Path`
+        The path to the DAG description file;
+        can be passed to :meth:`htcondor.Submit.from_dag` if you convert it to
+        a string, like ``Submit.from_dag(str(write_dag(...)))``.
     """
-    return DAGWriter(dag).write(dag_dir, dag_file_name=dag_file_name)
+    return DAGWriter(dag, node_name_formatter=node_name_formatter).write(
+        dag_dir, dag_file_name=dag_file_name,
+    )
 
 
 class DAGWriter:
     """Not re-entrant!"""
 
     def __init__(
-        self, dag: "dag.DAG", node_name_formatter: Optional[formatter.NodeNameFormatter] = None,
+        self,
+        dag: "dag.DAG",
+        node_name_formatter: Optional[formatter.NodeNameFormatter] = None,
     ):
         self.dag = dag
 
@@ -70,7 +82,9 @@ class DAGWriter:
 
         self.join_factory = edges.JoinFactory()
 
-    def write(self, dag_dir: Path, dag_file_name: Optional[str] = DEFAULT_DAG_FILE_NAME) -> Path:
+    def write(
+        self, dag_dir: Path, dag_file_name: Optional[str] = DEFAULT_DAG_FILE_NAME
+    ) -> Path:
         dag_dir = Path(dag_dir).absolute()
         dag_file_name = dag_file_name or DEFAULT_DAG_FILE_NAME
 
@@ -96,10 +110,11 @@ class DAGWriter:
         for layer in (
             n
             for n in self.dag.nodes
-            if isinstance(n, node.NodeLayer) and isinstance(n.submit_description, htcondor.Submit)
+            if isinstance(n, node.NodeLayer)
+            and isinstance(n.submit_description, htcondor.Submit)
         ):
             text = str(layer.submit_description) + "\nqueue"
-            (path / f"{layer.name}.sub").write_text(text)
+            (path / "{}.sub".format(layer.name)).write_text(text)
 
     def write_noop_submit_file(self, dag_dir):
         """
@@ -129,14 +144,16 @@ class DAGWriter:
 
     def yield_join_node_lines(self):
         for join in self.join_factory.joins:
-            yield f"JOB {self.join_node_name(join)} {NOOP_SUBMIT_FILE_NAME} NOOP"
+            yield "JOB {} {} NOOP".format(
+                self.join_node_name(join), NOOP_SUBMIT_FILE_NAME
+            )
 
     def yield_dag_meta_lines(self):
         if len(self.dag.dagman_config) > 0:
-            yield f"CONFIG {CONFIG_FILE_NAME}"
+            yield "CONFIG {}".format(CONFIG_FILE_NAME)
 
         if self.dag.jobstate_log is not None:
-            yield f"JOBSTATE_LOG {self.dag.jobstate_log.as_posix()}"
+            yield "JOBSTATE_LOG {}".format(self.dag.jobstate_log.as_posix())
 
         if self.dag.node_status_file is not None:
             nsf = self.dag.node_status_file
@@ -160,13 +177,15 @@ class DAGWriter:
             yield " ".join(parts)
 
         for k, v in self.dag.dagman_job_attrs.items():
-            yield f"SET_JOB_ATTR {k} = {v}"
+            yield "SET_JOB_ATTR {} = {}".format(k, v)
 
         for category, value in self.dag.max_jobs_per_category.items():
-            yield f"CATEGORY {category} {value}"
+            yield "CATEGORY {} {}".format(category, value)
 
     def write_dagman_config_file(self, dag_dir: Path):
-        contents = "\n".join(f"{k} = {v}" for k, v in self.dag.dagman_config.items())
+        contents = "\n".join(
+            "{} = {}".format(k, v) for k, v in self.dag.dagman_config.items()
+        )
         (dag_dir / CONFIG_FILE_NAME).write_text(contents)
 
     def yield_node_lines(self, node_: node.BaseNode) -> Iterator[str]:
@@ -177,43 +196,47 @@ class DAGWriter:
         elif isinstance(node_, node.FinalNode):
             yield from self.yield_final_node_lines(node_)
         else:
-            raise TypeError(f"unrecognized node type ({node_.__class__}) for node {node_}")
+            raise TypeError(
+                "unrecognized node type ({}) for node {}".format(node_.__class__, node_)
+            )
 
     def yield_layer_lines(self, layer: node.NodeLayer) -> Iterator[str]:
         # write out each low-level dagman node in the layer
         for idx, vars in enumerate(layer.vars):
             name = self.get_node_name(layer, idx)
             sub_file = (
-                f"{layer.name}.sub"
+                "{}.sub".format(layer.name)
                 if isinstance(layer.submit_description, htcondor.Submit)
                 else layer.submit_description.absolute().as_posix()
             )
-            parts = [f"JOB {name} {sub_file}"] + self.get_node_meta_parts(layer, idx)
+            parts = ["JOB {} {}".format(name, sub_file)] + self.get_node_meta_parts(
+                layer, idx
+            )
             yield " ".join(parts)
 
             if len(vars) > 0:
-                parts = [f"VARS {name}"]
+                parts = ["VARS {}".format(name)]
                 for key, value in vars.items():
                     value_text = str(value).replace("\\", "\\\\").replace('"', r"\"")
-                    parts.append(f'{key}="{value_text}"')
+                    parts.append('{}="{}"'.format(key, value_text))
                 yield " ".join(parts)
 
             yield from self.yield_node_meta_lines(layer, name)
 
     def yield_subdag_lines(self, subdag: node.SubDAG) -> Iterator[str]:
         name = self.get_node_name(subdag, 0)
-        parts = [f"SUBDAG EXTERNAL {name} {subdag.dag_file}"]
+        parts = ["SUBDAG EXTERNAL {} {}".format(name, subdag.dag_file)]
         parts += self.get_node_meta_parts(subdag, 0)
         yield " ".join(parts)
 
         yield from self.yield_node_meta_lines(subdag, name)
 
     def yield_final_node_lines(self, n: node.FinalNode) -> Iterator[str]:
-        yield f"FINAL {n.name} {n.name}.sub"
+        yield "FINAL {name} {name}.sub".format(name=n.name)
         yield from self.yield_node_meta_lines(n, n.name)
 
     def get_node_meta_parts(self, n: node.BaseNode, idx: int) -> List[str]:
-        parts: List[str] = []
+        parts = []
 
         if n.dir is not None:
             parts.extend(("DIR", str(n.dir)))
@@ -228,9 +251,9 @@ class DAGWriter:
 
     def yield_node_meta_lines(self, node: node.BaseNode, name: str) -> Iterator[str]:
         if node.retries is not None:
-            parts = [f"RETRY {name} {node.retries}"]
+            parts = ["RETRY {} {}".format(name, node.retries)]
             if node.retry_unless_exit is not None:
-                parts.append(f"UNLESS-EXIT {node.retry_unless_exit}")
+                parts.append("UNLESS-EXIT {}".format(node.retry_unless_exit))
             yield " ".join(parts)
 
         if node.pre is not None:
@@ -239,21 +262,23 @@ class DAGWriter:
             yield from self.yield_script_line(name, node.post, "POST")
 
         if node.pre_skip_exit_code is not None:
-            yield f"PRE_SKIP {name} {node.pre_skip_exit_code}"
+            yield "PRE_SKIP {} {}".format(name, node.pre_skip_exit_code)
 
         if node.priority != 0:
-            yield f"PRIORITY {name} {node.priority}"
+            yield "PRIORITY {} {}".format(name, node.priority)
 
         if node.category is not None:
-            yield f"CATEGORY {name} {node.category}"
+            yield "CATEGORY {} {}".format(name, node.category)
 
         if node.abort is not None:
-            parts = [f"ABORT-DAG-ON {name} {node.abort.node_exit_value}"]
+            parts = ["ABORT-DAG-ON {} {}".format(name, node.abort.node_exit_value)]
             if node.abort.dag_return_value is not None:
-                parts.append(f"RETURN {node.abort.dag_return_value}")
+                parts.append("RETURN {}".format(node.abort.dag_return_value))
             yield " ".join(parts)
 
-    def yield_script_line(self, name: str, script: node.Script, which: str) -> Iterator[str]:
+    def yield_script_line(
+        self, name: str, script: node.Script, which: str
+    ) -> Iterator[str]:
         parts = ["SCRIPT"]
 
         if script.retry:
@@ -268,12 +293,14 @@ class DAGWriter:
 
     def get_indexes_to_node_names(self, n: node.BaseNode) -> Dict[int, str]:
         if isinstance(n, node.SubDAG):
-            return {0: n.name}
+            return {0: self.get_node_name(n, 0)}
         elif isinstance(n, node.NodeLayer):
             return {idx: self.get_node_name(n, idx) for idx in range(len(n.vars))}
         else:
             raise TypeError(
-                f"Was not able to generate node names for node {n} because it was not a recognized node type"
+                "Was not able to generate node names for node {} because it was not a recognized node type".format(
+                    n
+                )
             )
 
     def join_node_name(self, join: edges.JoinNode) -> str:
@@ -288,13 +315,16 @@ class DAGWriter:
 
             for p, c in edge.get_edges(parent_layer, child_layer, self.join_factory):
                 parent_node_names = (
-                    (parent_layer_nodes[_] for _ in p)
+                    [parent_layer_nodes[_] for _ in p]
                     if not isinstance(p, edges.JoinNode)
                     else (self.join_node_name(p),)
                 )
                 child_node_names = (
-                    (child_layer_nodes[_] for _ in c)
+                    [child_layer_nodes[_] for _ in c]
                     if not isinstance(c, edges.JoinNode)
                     else (self.join_node_name(c),)
                 )
-                yield f"PARENT {' '.join(parent_node_names)} CHILD {' '.join(child_node_names)}"
+
+                yield "PARENT {} CHILD {}".format(
+                    " ".join(parent_node_names), " ".join(child_node_names)
+                )

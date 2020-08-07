@@ -1,4 +1,4 @@
-# Copyright 2019 HTCondor Team, Computer Sciences Department,
+# Copyright 2020 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import logging as _logging
+
 
 # SET UP NULL LOG HANDLER
 _logger = _logging.getLogger(__name__)
@@ -44,5 +45,3 @@ from .writer import DEFAULT_DAG_FILE_NAME, CONFIG_FILE_NAME, write_dag
 from .formatter import DEFAULT_SEPARATOR, NodeNameFormatter, SimpleFormatter
 from .rescue import rescue, find_rescue_file
 from . import exceptions
-
-from .version import __version__, version_info, version

@@ -1,4 +1,4 @@
-# Copyright 2019 HTCondor Team, Computer Sciences Department,
+# Copyright 2020 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,15 +23,39 @@ DEFAULT_SEPARATOR = ":"
 
 
 class NodeNameFormatter(abc.ABC):
+    """
+    An abstract base class that represents a certain way of formatting and
+    parsing underlying node names.
+    """
+
+    @abc.abstractmethod
     def generate(self, layer_name: str, node_index: int) -> str:
+        """
+        This method should generate a single node name,
+        given the name of the layer and the index of the underlying node
+        inside the layer.
+        """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def parse(self, node_name: str) -> Tuple[str, int]:
+        """
+        This method should convert a single node name back into a layer name
+        and underlying node index.
+        Node names must be invertible for :func:`rescue` to work.
+        """
         raise NotImplementedError
 
 
 class SimpleFormatter(NodeNameFormatter):
-    def __init__(self, separator=DEFAULT_SEPARATOR, index_format="{:d}", offset: int = 0):
+    """
+    A no-frills :class:`NodeNameFormatter`
+    that produces underlying node names like ``LayerName-5``.
+    """
+
+    def __init__(
+        self, separator=DEFAULT_SEPARATOR, index_format="{:d}", offset: int = 0
+    ):
         self.separator = separator
         self.index_format = index_format
         self.offset = offset
@@ -39,17 +63,33 @@ class SimpleFormatter(NodeNameFormatter):
     def generate(self, layer_name: str, node_index: int) -> str:
         if self.separator in layer_name:
             raise exceptions.LayerNameContainsSeparator(
-                f"The layer name {layer_name} cannot contain the node name separator character '{self.separator}'"
+                "The layer name {} cannot contain the node name separator character '{}'".format(
+                    layer_name, self.separator
+                )
             )
-        name = f"{layer_name}{self.separator}{self.index_format.format(node_index + self.offset)}"
+        name = "{}{}{}".format(
+            layer_name,
+            self.separator,
+            self.index_format.format(node_index + self.offset),
+        )
 
         if self.parse(name) != (layer_name, node_index):
-            raise exceptions.NoninvertibleFormat(
-                f"{self.__class__.__name__} was not able to invert the formatted node name {name}. Perhaps the index_format is incompatible?"
+            raise exceptions.CannotInvertFormat(
+                "{} was not able to invert the formatted node name {}. Perhaps the index_format is incompatible?".format(
+                    type(self).__name__, name
+                )
             )
 
         return name
 
     def parse(self, node_name: str) -> Tuple[str, int]:
         layer, index = node_name.split(self.separator)
-        return layer, int(index) - self.offset
+        try:
+            index = int(index)
+        except ValueError:
+            raise exceptions.CannotInvertFormat(
+                "{} was not able to invert the formatted node name {}. Perhaps the index_format is incompatible?".format(
+                    type(self).__name__, node_name
+                )
+            )
+        return layer, index - self.offset

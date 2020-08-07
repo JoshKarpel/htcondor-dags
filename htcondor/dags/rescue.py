@@ -1,4 +1,4 @@
-# Copyright 2019 HTCondor Team, Computer Sciences Department,
+# Copyright 2020 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-from typing import Optional, List, Dict, Iterator, Mapping, Set
+from typing import Optional, Mapping, Set
 
 import collections
 from pathlib import Path
@@ -25,7 +24,9 @@ from .writer import DEFAULT_DAG_FILE_NAME
 from . import exceptions
 
 
-def rescue(dag: dag.DAG, rescue_file: Path, formatter: Optional[NodeNameFormatter] = None) -> None:
+def rescue(
+    dag: dag.DAG, rescue_file: Path, formatter: Optional[NodeNameFormatter] = None
+) -> None:
     """
     Applies state recorded in a DAGMan rescue file to the ``dag``.
     The ``dag`` will be modified in-place.
@@ -67,7 +68,7 @@ def _rescue(dag: dag.DAG, rescue_file_text: str, formatter: NodeNameFormatter) -
 def parse_rescue_file_text(
     rescue_file_text: str, formatter: NodeNameFormatter
 ) -> Mapping[str, Set[int]]:
-    finished_nodes: Mapping[str, Set[int]] = collections.defaultdict(set)
+    finished_nodes = collections.defaultdict(set)
     for line in rescue_file_text.splitlines():
         if line.startswith("#"):
             continue
@@ -83,33 +84,37 @@ def parse_rescue_file_text(
 
 def apply_rescue(dag: dag.DAG, finished_nodes: Mapping[str, Set[int]]) -> None:
     for node in dag.nodes:
-        node.done.clear()
+        node.done = {}
         for index in finished_nodes[node.name]:
             node.done[index] = True
 
 
-def find_rescue_file(dag_dir: Path, dag_file_name: str = DEFAULT_DAG_FILE_NAME) -> Optional[Path]:
+def find_rescue_file(
+    dag_dir: Path, dag_file_name: str = DEFAULT_DAG_FILE_NAME
+) -> Optional[Path]:
     """
-    Finds the latest rescue file in a DAG directory (just like DAGMan itself would).
+    Finds the latest rescue file in a DAG directory
+    (just like DAGMan itself would).
 
     Parameters
     ----------
     dag_dir
         The directory to search in.
     dag_file_name
-        The base name of the DAG description file.
+        The base name of the DAG description file;
+        the same name you would pass to :func:`write_dag`.
 
     Returns
     -------
-    rescue_file
-        The :class:`pathlib.Path` to the latest rescue file.
+    rescue_file : :class:`pathlib.Path`
+        The path to the latest rescue file found in the ``dag_dir``.
     """
     dag_dir = Path(dag_dir)
-    rescue_files = sorted(dag_dir.glob(f"{dag_file_name}.rescue*"))
+    rescue_files = sorted(dag_dir.glob("{}.rescue*".format(dag_file_name)))
 
     if len(rescue_files) == 0:
         raise exceptions.NoRescueFileFound(
-            f"No rescue file for dag {dag_file_name} found in {dag_dir}"
+            "No rescue file for dag {} found in {}".format(dag_file_name, dag_dir)
         )
 
     return rescue_files[-1]

@@ -1,4 +1,4 @@
-# Copyright 2019 HTCondor Team, Computer Sciences Department,
+# Copyright 2020 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,18 +38,26 @@ class JoinFactory:
 
 
 class BaseEdge(abc.ABC):
+    """
+    An abstract class that represents the edge between two logical nodes
+    in the DAG.
+    """
+
     @abc.abstractmethod
     def get_edges(
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]],
+            Tuple[Tuple[int], JoinNode],
+            Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         """
         This abstract method is used by the writer to figure out which nodes
         in the parent and child should be connected by an actual DAGMan
-        edge. It should yield (or simply return) individual edge specifications.
+        edge. It should yield (or simply return an iterable of)
+        individual edge specifications.
 
         Each edge specification is a tuple containing two elements: the first is
         a group of parent node indices, the second is a group of child node indices.
@@ -99,7 +107,9 @@ class ManyToMany(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]],
+            Tuple[Tuple[int], JoinNode],
+            Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -108,11 +118,11 @@ class ManyToMany(BaseEdge):
         if num_parent_vars == 1 or num_child_vars == 1:
             # the weird pattern here is just to symmetrize the result, so that
             # we don't care which number of vars was 1
-            yield (tuple(range(num_parent_vars)), tuple(range(num_child_vars)))
+            yield tuple(range(num_parent_vars)), tuple(range(num_child_vars))
         else:
             join = join_factory.get_join_node()
-            yield (tuple(range(num_parent_vars)), join)
-            yield (join, tuple(range(num_child_vars)))
+            yield tuple(range(num_parent_vars)), join
+            yield join, tuple(range(num_child_vars))
 
 
 class OneToOne(BaseEdge):
@@ -120,13 +130,16 @@ class OneToOne(BaseEdge):
     This edge connects two layers "linearly": each underlying node in the child
     layer is a child of the corresponding underlying node with the same index
     in the parent layer.
+    The parent and child layers must have the same number of underlying nodes.
     """
 
     def get_edges(
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]],
+            Tuple[Tuple[int], JoinNode],
+            Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -134,7 +147,9 @@ class OneToOne(BaseEdge):
 
         if num_parent_vars != num_child_vars:
             raise exceptions.OneToOneEdgeNeedsSameNumberOfVars(
-                f"Parent layer {parent} has {num_parent_vars} nodes, but child layer {child} has {num_child_vars} nodes"
+                "Parent layer {} has {} nodes, but child layer {} has {} nodes".format(
+                    parent, num_parent_vars, child, num_child_vars
+                )
             )
 
         yield from (((i,), (i,)) for i in range(num_parent_vars))
@@ -147,7 +162,7 @@ class Grouper(BaseEdge):
     constructor). Chunks are then connected like a :class:`OneToOne` edge.
 
     The number of chunks in each layer must be the same, and each layer must be
-    evenly-divided into chunks.
+    evenly-divided into chunks (no leftover underlying nodes).
 
     When both chunk sizes are ``1`` this is identical to a :class:`OneToOne`
     edge, and you should use that edge instead because it produces a more
@@ -170,7 +185,9 @@ class Grouper(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]],
+            Tuple[Tuple[int], JoinNode],
+            Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -178,15 +195,31 @@ class Grouper(BaseEdge):
 
         if num_parent_vars % self.parent_chunk_size != 0:
             raise exceptions.IncompatibleGrouper(
-                f"Cannot apply edge {self} to parent layer {parent} because number of real parent nodes ({len(parent)}) is not evenly divisible by the parent chunk size ({self.parent_chunk_size})"
+                "Cannot apply edge {} to parent layer {} because number of real parent nodes ({}) is not evenly divisible by the parent chunk size ({})".format(
+                    self, parent, len(parent), self.parent_chunk_size
+                )
             )
         if num_child_vars % self.child_chunk_size != 0:
             raise exceptions.IncompatibleGrouper(
-                f"Cannot apply edge {self} to child layer {child} because number of real child nodes ({len(child)}) is not evenly divisible by the child chunk size ({self.child_chunk_size})"
+                "Cannot apply edge {} to child layer {} because number of real child nodes ({}) is not evenly divisible by the child chunk size ({})".format(
+                    self, child, len(child), self.child_chunk_size
+                )
             )
-        if (num_parent_vars // self.parent_chunk_size) != (num_child_vars // self.child_chunk_size):
+        if (num_parent_vars // self.parent_chunk_size) != (
+            num_child_vars // self.child_chunk_size
+        ):
             raise exceptions.IncompatibleGrouper(
-                f"Cannot apply edge {self} to layers {parent} and {child} because they do not produce the same number of chunks (parent chunk: {len(parent)} / {self.parent_chunk_size} = {len(parent) // self.parent_chunk_size}, child chunk: {len(child)} / {self.child_chunk_size} = {len(child) // self.child_chunk_size})"
+                "Cannot apply edge {} to layers {} and {} because they do not produce the same number of chunks (parent chunk: {} / {} = {}, child chunk: {} / {} = {})".format(
+                    self,
+                    parent,
+                    child,
+                    len(parent),
+                    self.parent_chunk_size,
+                    len(parent) // self.parent_chunk_size,
+                    len(child),
+                    self.child_chunk_size,
+                    len(child) // self.child_chunk_size,
+                )
             )
 
         for parent_group, child_group in zip(
@@ -194,8 +227,8 @@ class Grouper(BaseEdge):
             utils.grouper(range(num_child_vars), self.child_chunk_size),
         ):
             join = join_factory.get_join_node()
-            yield (parent_group, join)
-            yield (join, child_group)
+            yield parent_group, join
+            yield join, child_group
 
     def __repr__(self) -> str:
         return utils.make_repr(self, ("parent_chunk_size", "child_chunk_size"))
@@ -209,7 +242,17 @@ class Slicer(BaseEdge):
     slice.
     """
 
-    def __init__(self, parent_slice: slice = slice(None), child_slice: slice = slice(None)):
+    def __init__(
+        self, parent_slice: slice = slice(None), child_slice: slice = slice(None)
+    ):
+        """
+        Parameters
+        ----------
+        parent_slice
+            The slice to use for the parent layer.
+        child_slice
+            The slice to use for the child layer.
+        """
         self.parent_slice = parent_slice
         self.child_slice = child_slice
 
@@ -217,7 +260,9 @@ class Slicer(BaseEdge):
         self, parent: "node.BaseNode", child: "node.BaseNode", join_factory: JoinFactory
     ) -> Iterable[
         Union[
-            Tuple[Tuple[int], Tuple[int]], Tuple[Tuple[int], JoinNode], Tuple[JoinNode, Tuple[int]],
+            Tuple[Tuple[int], Tuple[int]],
+            Tuple[Tuple[int], JoinNode],
+            Tuple[JoinNode, Tuple[int]],
         ]
     ]:
         num_parent_vars = len(parent)
@@ -237,7 +282,7 @@ class Slicer(BaseEdge):
                 self.child_slice.step,
             ),
         ):
-            yield ((parent_index,), (child_index,))
+            yield (parent_index,), (child_index,)
 
     def __repr__(self) -> str:
         return utils.make_repr(self, ("parent_slice", "child_slice"))

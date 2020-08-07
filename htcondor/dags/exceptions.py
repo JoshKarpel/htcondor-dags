@@ -1,4 +1,4 @@
-# Copyright 2019 HTCondor Team, Computer Sciences Department,
+# Copyright 2020 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,5 +42,5 @@ class NoRescueFileFound(DAGsException):
     pass
 
 
-class NoninvertibleFormat(DAGsException):
+class CannotInvertFormat(DAGsException):
     pass
